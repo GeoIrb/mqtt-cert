@@ -1,0 +1,8 @@
+*.key 
+*.crt 
+*.csr 
+*.srl
+
+certs/
+
+rm.sh

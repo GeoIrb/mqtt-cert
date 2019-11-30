@@ -35,23 +35,14 @@ MOSQUITTOUSER=${MOSQUITTOUSER:=$USER}
 #
 defaultmd="-sha512"
 
-function maxdays() {
-	nowyear=$(date +%Y)
-	years=$(expr 2032 - $nowyear)
-	days=$(expr $years '*' 365)
-
-	echo $days
-}
 
 function getipaddresses() {
-	/sbin/ifconfig |
-		grep -v tunnel |
-		sed -En '/inet6? /p' |
-		sed -Ee 's/inet6? (addr:)?//' |
-		awk '{print $1;}' |
-		sed -e 's/[%/].*//' |
-		egrep -v '(::1|127\.0\.0\.1)'	# omit loopback to add it later
+	/sbin/ifconfig | grep -v tunnel | sed -En '/inet6? /p' | sed -Ee 's/inet6? (addr:)?//' | awk '{print $1;}' | sed -e 's/[%/].*//' | egrep -v '(::1|127\.0\.0\.1)'
+		# omit loopback to add it later
 }
+
+
+
 
 
 function addresslist() {
@@ -62,6 +53,7 @@ function addresslist() {
 	done
 	ALIST="${ALIST}IP:127.0.0.1,IP:::1,"
 
+	
 	for ip in $(echo ${ALTADDRESSES}); do
 		ALIST="${ALIST}IP:${ip},"
 	done
@@ -70,34 +62,11 @@ function addresslist() {
 	done
 	ALIST="${ALIST}DNS:localhost"
 	echo $ALIST
-
 }
 
-days=$(maxdays)
+echo $(addresslist)
 
-if [ -n "$CAKILLFILES" ]; then
-	rm -f $CACERT.??? $SERVER.??? $CACERT.srl
-fi
-
-if [ ! -f $CACERT.crt ]; then
-
-	#    ____    _
-	#   / ___|  / \
-	#  | |     / _ \
-	#  | |___ / ___ \
-	#   \____/_/   \_\
-	#
-
-	# Create un-encrypted (!) key
-	$openssl req -newkey rsa:${keybits} -x509 -nodes $defaultmd -days $days -extensions v3_ca -keyout $CACERT.key -out $CACERT.crt -subj "${CA_DN}"
-	echo "Created CA certificate in $CACERT.crt"
-	$openssl x509 -in $CACERT.crt -nameopt multiline -subject -noout
-
-	chmod 400 $CACERT.key
-	chmod 444 $CACERT.crt
-	chown $MOSQUITTOUSER $CACERT.*
-	echo "Warning: the CA key is not encrypted; store it safely!"
-fi
+exit 1
 
 if [ ! -f $SERVER.key ]; then
 	echo "--- Creating server key and signing request"

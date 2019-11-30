@@ -1,14 +1,27 @@
 package main
 
+/*
+URL: https://github.com/mccoyst/myip/blob/master/myip.go
+URL: http://changsijay.com/2013/07/28/golang-get-ip-address/
+*/
+
 import (
-	"fmt"
-	"os/exec"
+	"net"
+	"os"
 )
 
 func main() {
-	cmd := exec.Command("openssl", "req", "-newkey", "rsa:2048", "-x509", "-nodes", "-sha512", "-days", "365", "-extensions", "v3_ca", "-keyout", "ca.key", "-out", "ca.crt", "-subj", `"/CN=An MQTT broker"`)
-	fmt.Println(cmd.Run())
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		os.Stderr.WriteString("Oops: " + err.Error() + "\n")
+		os.Exit(1)
+	}
 
-	cmd = exec.Command("openssl", "x509", "-in", "ca.crt", "-nameopt", "multiline", "-subject", "-noout")
-	fmt.Println(cmd.Run())
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To16() != nil {
+				os.Stdout.WriteString(ipnet.IP.String() + "\n")
+			}
+		}
+	}
 }
