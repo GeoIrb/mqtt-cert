@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/GeoIrb/mqtt-cert/generate"
 )
@@ -13,12 +14,13 @@ func main() {
 	}
 	log.Println("Generated CA cert and key")
 
-	if err := ca.Server(); err != nil {
+	hostname, _ := os.Hostname()
+	if err := ca.Generate(hostname, generate.CertServer); err != nil {
 		log.Fatalf("Generate Server: %s", err)
 	}
 	log.Println("Generated server cert and key")
 
-	if err := ca.Client(); err != nil {
+	if err := ca.Generate("client", generate.CertClient); err != nil {
 		log.Fatalf("Generate Client: %s", err)
 	}
 	log.Println("Generated client cert and key")

@@ -10,13 +10,14 @@ import (
 	"time"
 )
 
+//CertificateAuthority даннные центра сертификации
 type CertificateAuthority struct {
 	key         *rsa.PrivateKey
 	certificate x509.Certificate
 }
 
+//NewCertificateAuthority cоздание нового центра сертификации
 func NewCertificateAuthority() (ca CertificateAuthority, err error) {
-
 	ca.certificate = x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
@@ -54,4 +55,28 @@ func NewCertificateAuthority() (ca CertificateAuthority, err error) {
 	}
 
 	return ca, nil
+}
+
+//Generate генерирует на основе СА и template сертификата файлы c именем nameFile с ключем и сертификатом
+func (ca CertificateAuthority) Generate(nameFile string, template x509.Certificate) error {
+	if ca.key == nil {
+		return fmt.Errorf("Empty CA")
+	}
+
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &ca.certificate, &key.PublicKey, ca.key)
+
+	if err := saveInFile(nameFile+".key", "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(key)); err != nil {
+		return fmt.Errorf("Create server key file: %s", err)
+	}
+
+	if err := saveInFile(nameFile+".crt", "CERTIFICATE", derBytes); err != nil {
+		return fmt.Errorf("Create server crt file: %s", err)
+	}
+
+	return nil
 }
