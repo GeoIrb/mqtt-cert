@@ -2,6 +2,7 @@
 *.crt 
 *.csr 
 *.srl
+go-cert
 
 certs/
 
