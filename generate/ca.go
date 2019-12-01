@@ -5,20 +5,17 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
 	"math/big"
-	"os"
 	"time"
 )
 
 type CertificateAuthority struct {
-	PrivKey     *rsa.PrivateKey
+	key         *rsa.PrivateKey
 	certificate x509.Certificate
 }
 
 func NewCertificateAuthority() (ca CertificateAuthority, err error) {
-	keyFile, crtFile := "ca.key", "ca.crt"
 
 	ca.certificate = x509.Certificate{
 		SerialNumber: big.NewInt(1),
@@ -38,29 +35,23 @@ func NewCertificateAuthority() (ca CertificateAuthority, err error) {
 		IsCA:                  true,
 	}
 
-	ca.PrivKey, err = rsa.GenerateKey(rand.Reader, 2048)
+	ca.key, err = rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return CertificateAuthority{}, err
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &ca.certificate, &ca.certificate, &ca.PrivKey.PublicKey, ca.PrivKey)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &ca.certificate, &ca.certificate, &ca.key.PublicKey, ca.key)
 	if err != nil {
 		return CertificateAuthority{}, fmt.Errorf("Failed to create certificate: %s", err)
 	}
 
-	file, err := os.OpenFile(keyFile, os.O_CREATE|os.O_WRONLY, 0444)
-	if err != nil {
-		return CertificateAuthority{}, fmt.Errorf("Create key file: %s", err)
+	if err := saveInFile("ca.key", "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(ca.key)); err != nil {
+		return CertificateAuthority{}, fmt.Errorf("Create ca crt file: %s", err)
 	}
-	pem.Encode(file, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(ca.PrivKey)})
-	file.Close()
 
-	file, err = os.OpenFile(crtFile, os.O_CREATE|os.O_WRONLY, 0444)
-	if err != nil {
-		return CertificateAuthority{}, fmt.Errorf("Create crt file: %s", err)
+	if err := saveInFile("ca.crt", "CERTIFICATE", derBytes); err != nil {
+		return CertificateAuthority{}, fmt.Errorf("Create ca crt file: %s", err)
 	}
-	pem.Encode(file, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	file.Close()
 
 	return ca, nil
 }
