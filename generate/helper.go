@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+//CertServer шаблон сертификата севера
 var CertServer x509.Certificate = x509.Certificate{
 	SerialNumber: big.NewInt(1),
 	Subject: pkix.Name{
@@ -36,6 +37,7 @@ var CertServer x509.Certificate = x509.Certificate{
 	PolicyIdentifiers: []asn1.ObjectIdentifier{[]int{1, 3, 5, 8}},
 }
 
+//CertClient шаблон сертификата клиента
 var CertClient x509.Certificate = x509.Certificate{
 	SerialNumber: big.NewInt(1),
 	Subject: pkix.Name{
@@ -58,7 +60,7 @@ func saveInFile(fileName, t string, info []byte) error {
 	if err != nil {
 		return fmt.Errorf("Create crt file: %s", err)
 	}
-	pem.Encode(file, &pem.Block{Type: "CERTIFICATE", Bytes: info})
+	pem.Encode(file, &pem.Block{Type: t, Bytes: info})
 	file.Close()
 
 	return nil
@@ -71,7 +73,7 @@ func getAddresses() []net.IP {
 		return nil
 	}
 
-	var ip []net.IP
+	var ip []net.IP = []net.IP{[]byte("127.0.0.1")}
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To16() != nil {
